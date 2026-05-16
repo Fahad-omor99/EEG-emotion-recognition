@@ -60,7 +60,7 @@ def compute_class_weights(train_loader, n_classes=4, device='cpu'):
     all_labels = np.array(all_labels)
 
     class_counts  = np.bincount(all_labels, minlength=n_classes)
-    class_weights = 1.0 / (class_counts + 1e-6)
+    class_weights = 1.0 / (np.sqrt(class_counts) + 1e-6)
     class_weights = class_weights / class_weights.sum() * n_classes
 
     print(f"\nClass counts  : {class_counts}")

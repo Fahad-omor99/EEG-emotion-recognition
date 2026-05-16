@@ -17,24 +17,19 @@ def train_one_epoch(model, loader, optimizer, criterion, device):
         batch_X = batch_X.to(device)
         batch_y = batch_y.to(device)
 
-        # Forward pass
         optimizer.zero_grad()
         outputs = model(batch_X)
         loss    = criterion(outputs, batch_y)
 
-        # Backward pass
         loss.backward()
         optimizer.step()
 
-        # Track metrics
-        preds = outputs.argmax(dim=1)
+        preds          = outputs.argmax(dim=1)
         total_loss    += loss.item() * len(batch_y)
         total_correct += (preds == batch_y).sum().item()
         total_samples += len(batch_y)
 
-    avg_loss = total_loss / total_samples
-    accuracy = total_correct / total_samples * 100
-    return avg_loss, accuracy
+    return total_loss / total_samples, total_correct / total_samples * 100
 
 
 def evaluate(model, loader, criterion, device):
@@ -47,17 +42,31 @@ def evaluate(model, loader, criterion, device):
             batch_X = batch_X.to(device)
             batch_y = batch_y.to(device)
 
-            outputs = model(batch_X)
-            loss    = criterion(outputs, batch_y)
-
-            preds = outputs.argmax(dim=1)
+            outputs        = model(batch_X)
+            loss           = criterion(outputs, batch_y)
+            preds          = outputs.argmax(dim=1)
             total_loss    += loss.item() * len(batch_y)
             total_correct += (preds == batch_y).sum().item()
             total_samples += len(batch_y)
 
-    avg_loss = total_loss / total_samples
-    accuracy = total_correct / total_samples * 100
-    return avg_loss, accuracy
+    return total_loss / total_samples, total_correct / total_samples * 100
+
+
+def compute_class_weights(train_loader, n_classes=4, device='cpu'):
+    """Compute inverse-frequency class weights to fix class imbalance."""
+    all_labels = []
+    for _, batch_y in train_loader:
+        all_labels.extend(batch_y.numpy())
+    all_labels = np.array(all_labels)
+
+    class_counts  = np.bincount(all_labels, minlength=n_classes)
+    class_weights = 1.0 / (class_counts + 1e-6)
+    class_weights = class_weights / class_weights.sum() * n_classes
+
+    print(f"\nClass counts  : {class_counts}")
+    print(f"Class weights : {class_weights.round(3)}")
+
+    return torch.tensor(class_weights, dtype=torch.float32).to(device)
 
 
 def train(
@@ -67,7 +76,7 @@ def train(
     dropout=0.5,
     save_path='models/best_model.pt'
 ):
-    """Full training pipeline."""
+    """Full training pipeline with class-weighted loss."""
 
     # ── Device ─────────────────────────────────────────────────────
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -75,14 +84,12 @@ def train(
 
     # ── Data ───────────────────────────────────────────────────────
     print("\nLoading data...")
-    import os
     if os.path.exists('data/data_preprocessed_python/s01.dat'):
         from dataset import build_dataloaders
         train_loader, val_loader, test_loader = build_dataloaders(
             batch_size=batch_size
         )
     else:
-        # Mock data for testing
         print("No DEAP data found — using mock data")
         from dataset import EEGEmotionDataset
         from torch.utils.data import DataLoader
@@ -90,19 +97,22 @@ def train(
 
         X = np.random.randn(2000, 32, 256).astype(np.float32)
         y = np.random.randint(0, 4, 2000).astype(np.int64)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-        X_train, X_val, y_train, y_val   = train_test_split(X_train, y_train, test_size=0.1)
+        X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2)
+        X_tr, X_v,  y_tr, y_v  = train_test_split(X_tr, y_tr, test_size=0.1)
 
-        train_loader = DataLoader(EEGEmotionDataset(X_train, y_train), batch_size=batch_size, shuffle=True)
-        val_loader   = DataLoader(EEGEmotionDataset(X_val,   y_val),   batch_size=batch_size)
-        test_loader  = DataLoader(EEGEmotionDataset(X_test,  y_test),  batch_size=batch_size)
+        train_loader = DataLoader(EEGEmotionDataset(X_tr, y_tr), batch_size=batch_size, shuffle=True)
+        val_loader   = DataLoader(EEGEmotionDataset(X_v,  y_v),  batch_size=batch_size)
+        test_loader  = DataLoader(EEGEmotionDataset(X_te, y_te), batch_size=batch_size)
 
     # ── Model ──────────────────────────────────────────────────────
     model = EEGNet(n_classes=4, n_channels=32, n_timepoints=256, dropout=dropout)
     model = model.to(device)
 
-    # ── Loss and Optimizer ─────────────────────────────────────────
-    criterion = nn.CrossEntropyLoss()
+    # ── Class-weighted Loss ────────────────────────────────────────
+    weights   = compute_class_weights(train_loader, device=device)
+    criterion = nn.CrossEntropyLoss(weight=weights)
+
+    # ── Optimizer and Scheduler ────────────────────────────────────
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
 
@@ -128,16 +138,15 @@ def train(
 
         print(f"{epoch:>6} {train_loss:>11.4f} {train_acc:>9.2f}% {val_loss:>10.4f} {val_acc:>8.2f}% {current_lr:>10.6f}")
 
-        # Save best model
         if val_acc > best_val_acc:
             best_val_acc = val_acc
             best_epoch   = epoch
             os.makedirs('models', exist_ok=True)
             torch.save({
-                'epoch'     : epoch,
-                'model_state': model.state_dict(),
+                'epoch'          : epoch,
+                'model_state'    : model.state_dict(),
                 'optimizer_state': optimizer.state_dict(),
-                'val_acc'   : val_acc,
+                'val_acc'        : val_acc,
             }, save_path)
             print(f"         ✓ Best model saved (val_acc={val_acc:.2f}%)")
 
@@ -146,7 +155,6 @@ def train(
     print(f"Training complete!")
     print(f"Best val accuracy : {best_val_acc:.2f}% at epoch {best_epoch}")
 
-    # Load best model and test
     checkpoint = torch.load(save_path)
     model.load_state_dict(checkpoint['model_state'])
     test_loss, test_acc = evaluate(model, test_loader, criterion, device)

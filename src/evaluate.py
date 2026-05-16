@@ -9,7 +9,7 @@ from sklearn.metrics import (
     confusion_matrix, classification_report,
     ConfusionMatrixDisplay
 )
-from model import EEGNetgit 
+from model import EEGNet
 
 LABEL_NAMES = ['Happy', 'Fear', 'Sad', 'Neutral']
 

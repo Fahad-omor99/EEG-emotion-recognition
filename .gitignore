@@ -7,3 +7,6 @@ models/*.pth
 .ipynb_checkpoints/
 *.npy
 *.npz
+models/de_features.npy
+models/de_labels.npy
+models/svm_model.pkl

@@ -144,4 +144,4 @@ def train_de(n_epochs=50, batch_size=64, lr=0.001):
 
 
 if __name__ == '__main__':
-    train_de(n_epochs=50, batch_size=64, lr=0.001)
+    train_de(n_epochs=100, batch_size=64, lr=0.0005)

@@ -182,3 +182,4 @@ if start_btn:
             log_placeholder.code("\n".join(log_lines[-8:]))
 
         time.sleep(chunk_size / 128 / speed)
+        

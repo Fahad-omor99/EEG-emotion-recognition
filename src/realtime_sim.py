@@ -1,4 +1,4 @@
-# Phase 10: Real-time EEG simulation pipeline
+# Phase 10+11: Real-time EEG simulation pipeline
 import numpy as np
 import time
 import sys
@@ -9,9 +9,9 @@ from preprocess import bandpass_filter, normalize, WINDOW_SAMPLES, STEP_SAMPLES
 from features import compute_de
 from label_utils import LABEL_NAMES
 
-SFREQ        = 128   # samples per second
-CHUNK_SIZE   = 64    # samples per chunk (0.5 seconds)
-BUFFER_SIZE  = WINDOW_SAMPLES  # 256 samples = 2 seconds
+SFREQ        = 128  
+CHUNK_SIZE   = 64    
+BUFFER_SIZE  = WINDOW_SAMPLES  
 
 
 class EEGBuffer:

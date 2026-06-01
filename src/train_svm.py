@@ -1,3 +1,4 @@
+# Improvement: SVM + Differential Entropy features - 62% balanced accuracy
 import numpy as np
 import os
 import sys
@@ -41,7 +42,7 @@ def load_de_features():
 def train_svm():
     X, y = load_de_features()
 
-    # Use 20,000 samples — enough for good accuracy, trains in 5-10 mins
+    # Using 20,000 samples for less training times ( 5-10 mins )
     from sklearn.utils import resample
     X, y = resample(X, y, n_samples=20000, stratify=y, random_state=42)
     print(f"Using {len(X)} samples for training")

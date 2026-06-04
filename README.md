@@ -10,21 +10,24 @@ Real-time emotion classification from EEG brain signals using the DEAP dataset.
 ## Pipeline
 Raw EEG → Bandpass Filter → DE Features → SVM → Live Streamlit Dashboard
 
+
 ## Project Structure
+```
 src/
-├── load_data.py      # Phase 1: Load DEAP dataset (32 subjects)
-├── preprocess.py     # Phase 2: Bandpass filter, normalize, windowing
-├── label_utils.py    # Phase 6: Valence/arousal → emotion labels
-├── dataset.py        # Phase 5: PyTorch Dataset and DataLoader
-├── model.py          # Phase 7: EEGNet deep learning model
-├── train.py          # Phase 8: EEGNet training loop
-├── evaluate.py       # Phase 9: Confusion matrix and metrics
-├── features.py       # Improvement 1: Differential Entropy extraction
-├── model_de.py       # Improvement 1: MLP classifier for DE features
-├── train_de.py       # Improvement 2: Cross-subject validation
-├── train_svm.py      # Best model: SVM + DE features (62% accuracy)
-├── realtime_sim.py   # Phase 10+11: Real-time EEG simulation pipeline
-└── dashboard.py      # Phase 12: Live Streamlit emotion dashboard
+├── load_data.py       # Phase 1: Load DEAP dataset
+├── preprocess.py      # Phase 2: Bandpass filter
+├── label_utils.py     # Phase 6: Emotion labels
+├── dataset.py         # Phase 5: PyTorch Dataset
+├── model.py           # Phase 7: EEGNet model
+├── train.py           # Phase 8: Training loop
+├── evaluate.py        # Phase 9: Evaluation
+├── features.py        # Improvement 1: DE features
+├── model_de.py        # Improvement 1: MLP classifier
+├── train_de.py        # Improvement 2: Cross-subject
+├── train_svm.py       # Best model: SVM 62%
+├── realtime_sim.py    # Phase 10+11: Real-time pipeline
+└── dashboard.py       # Phase 12: Streamlit dashboard
+```
 
 ## How to Run
 ```bash
